@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 	"testing"
 )
 
@@ -25,16 +26,79 @@ func TestParseCommand(t *testing.T) {
 
 func TestCommandCRUD(t *testing.T) {
 	dbpath = "test"
-	if _, err := NewCommand(CmdSet, "test/one", map[string]string{}, []byte("one")).Exec(); err != nil {
-		t.Fail()
+	NewCommand(CmdDel, "test", map[string]string{}, []byte{}).Exec()
+
+	if _, err := NewCommand(CmdSet, "test/one", map[string]string{}, []byte("1")).Exec(); err != nil {
+		t.Errorf("set err: %s", err)
 	}
-	if data, err := NewCommand(CmdGet, "test/one", map[string]string{}, []byte{}).Exec(); err != nil || string(data) != "one" {
-		t.Fail()
+	if data, err := NewCommand(CmdGet, "test/one", map[string]string{}, []byte{}).Exec(); err != nil || string(data) != "1" {
+		t.Errorf("get err: %s, data: '%s'", err, string(data))
 	}
+
+	if _, err := NewCommand(CmdSet, "test/one", map[string]string{}, []byte("11")).Exec(); err != nil {
+		t.Errorf("set err: %s", err)
+	}
+	if data, err := NewCommand(CmdGet, "test/one", map[string]string{}, []byte{}).Exec(); err != nil || string(data) != "11" {
+		t.Errorf("get err: %s, data: '%s'", err, string(data))
+	}
+
 	if _, err := NewCommand(CmdDel, "test/one", map[string]string{}, []byte{}).Exec(); err != nil {
-		t.Fail()
+		t.Errorf("del err: %s", err)
 	}
-	if data, err := NewCommand(CmdGet, "test/one", map[string]string{}, []byte{}).Exec(); err == nil || string(data) == "one" {
-		t.Fail()
+	if data, err := NewCommand(CmdGet, "test/one", map[string]string{}, []byte{}).Exec(); err == nil || string(data) == "1" {
+		t.Errorf("del get err: %s, data: %s", err, string(data))
 	}
+}
+
+func TestCommandMov(t *testing.T) {
+	dbpath = "test"
+	NewCommand(CmdDel, "test", map[string]string{}, []byte{}).Exec()
+
+	if _, err := NewCommand(CmdSet, "test/one", map[string]string{}, []byte("1")).Exec(); err != nil {
+		t.Errorf("set err: %s", err)
+	}
+	if _, err := NewCommand(CmdMov, "test/one", map[string]string{}, []byte("test/two")).Exec(); err != nil {
+		t.Errorf("mov err: %s", err)
+	}
+	if data, err := NewCommand(CmdGet, "test/one", map[string]string{}, []byte{}).Exec(); err == nil {
+		t.Errorf("mov err: %s, data: %s", err, string(data))
+	}
+	if data, err := NewCommand(CmdGet, "test/two", map[string]string{}, []byte{}).Exec(); err != nil || string(data) != "1" {
+		t.Errorf("mov err: %s, data: '%s'", err, string(data))
+	}
+}
+
+func TestCommandList(t *testing.T) {
+	dbpath = "test"
+	NewCommand(CmdDel, "test", map[string]string{}, []byte{}).Exec()
+
+	if _, err := NewCommand(CmdSet, "test/one", map[string]string{}, []byte("1")).Exec(); err != nil {
+		t.Errorf("set err: %s", err)
+	}
+	if _, err := NewCommand(CmdSet, "test/two", map[string]string{}, []byte("22")).Exec(); err != nil {
+		t.Errorf("set err: %s", err)
+	}
+	if _, err := NewCommand(CmdSet, "test/three", map[string]string{}, []byte("333")).Exec(); err != nil {
+		t.Errorf("set err: %s", err)
+	}
+	if _, err := NewCommand(CmdSet, "test/sub/one", map[string]string{}, []byte("sub/1")).Exec(); err != nil {
+		t.Errorf("set err: %s", err)
+	}
+
+	if data, err := NewCommand(CmdList, "test", map[string]string{}, []byte{}).Exec(); err != nil || len(strings.Split(string(data), "\n")) != 4 {
+		t.Errorf("err: %s, data: %s", err, string(data))
+	}
+	if data, err := NewCommand(CmdList, "test", map[string]string{"recursive": "false"}, []byte{}).Exec(); err != nil || len(strings.Split(string(data), "\n")) != 3 {
+		t.Errorf("err: %s, data: %s", err, string(data))
+	}
+	if data, err := NewCommand(CmdList, "test", map[string]string{"limit": "2"}, []byte{}).Exec(); err != nil || len(strings.Split(string(data), "\n")) != 2 {
+		t.Errorf("err: %s, data: %s", err, string(data))
+	}
+	if data, err := NewCommand(CmdList, "test", map[string]string{"keys": "true"}, []byte{}).Exec(); err != nil || strings.Contains(string(data), "22") {
+		t.Errorf("err: %s, data: %s", err, string(data))
+	}
+	if data, err := NewCommand(CmdList, "test", map[string]string{"size-limit": "1"}, []byte{}).Exec(); err != nil || strings.Contains(string(data), "22") {
+		t.Errorf("err: %s, data: %s", err, string(data))
+	}
+
 }

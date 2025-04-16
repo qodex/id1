@@ -89,6 +89,10 @@ func (t Command) Exec() ([]byte, error) {
 		return t.get()
 	case CmdDel:
 		return []byte{}, t.del()
+	case CmdMov:
+		return []byte{}, t.move()
+	case CmdList:
+		return t.list()
 	default:
 		return []byte{}, fmt.Errorf("not supported")
 	}
