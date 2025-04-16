@@ -8,6 +8,7 @@ import (
 
 var version = "latest"
 var port = "8080"
+var dbpath = "id1db"
 
 func main() {
 	log.Printf("id1 API %s, port: %s\n\n", version, port)
