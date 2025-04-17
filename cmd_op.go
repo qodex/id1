@@ -4,6 +4,7 @@ type CmdOp int
 
 const (
 	CmdSet CmdOp = iota
+	CmdAdd
 	CmdGet
 	CmdDel
 	CmdMov
@@ -12,6 +13,7 @@ const (
 
 var opName = map[CmdOp]string{
 	CmdSet:  "set",
+	CmdAdd:  "add",
 	CmdGet:  "get",
 	CmdDel:  "del",
 	CmdMov:  "mov",
@@ -20,6 +22,7 @@ var opName = map[CmdOp]string{
 
 var nameOp = map[string]CmdOp{
 	"set":  CmdSet,
+	"add":  CmdAdd,
 	"get":  CmdGet,
 	"del":  CmdDel,
 	"mov":  CmdMov,

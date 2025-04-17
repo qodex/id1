@@ -31,6 +31,11 @@ func err403(rw http.ResponseWriter, s string) {
 	http.Error(rw, s, http.StatusForbidden)
 }
 
+func err413(rw http.ResponseWriter, s string) {
+	cors(&rw)
+	http.Error(rw, s, http.StatusRequestEntityTooLarge)
+}
+
 func err400(rw http.ResponseWriter, s string) {
 	cors(&rw)
 	http.Error(rw, s, http.StatusBadRequest)

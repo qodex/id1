@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,11 +15,11 @@ func (t *Command) move() error {
 	newDir := filepath.Dir(newPath)
 
 	if _, err := os.Stat(oldPath); err != nil {
-		return fmt.Errorf("not found")
+		return ErrNotFound
 	}
 
 	if _, err := os.Stat(newPath); err == nil {
-		return fmt.Errorf("exists")
+		return ErrExists
 	}
 
 	if _, err := os.Stat(newDir); os.IsNotExist(err) {

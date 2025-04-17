@@ -85,10 +85,10 @@ func TestCommandList(t *testing.T) {
 		t.Errorf("set err: %s", err)
 	}
 
-	if data, err := NewCommand(CmdList, "test", map[string]string{}, []byte{}).Exec(); err != nil || len(strings.Split(string(data), "\n")) != 4 {
+	if data, err := NewCommand(CmdList, "test", map[string]string{"recursive": "true"}, []byte{}).Exec(); err != nil || len(strings.Split(string(data), "\n")) != 4 {
 		t.Errorf("err: %s, data: %s", err, string(data))
 	}
-	if data, err := NewCommand(CmdList, "test", map[string]string{"recursive": "false"}, []byte{}).Exec(); err != nil || len(strings.Split(string(data), "\n")) != 3 {
+	if data, err := NewCommand(CmdList, "test", map[string]string{}, []byte{}).Exec(); err != nil || len(strings.Split(string(data), "\n")) != 3 {
 		t.Errorf("err: %s, data: %s", err, string(data))
 	}
 	if data, err := NewCommand(CmdList, "test", map[string]string{"limit": "2"}, []byte{}).Exec(); err != nil || len(strings.Split(string(data), "\n")) != 2 {
@@ -100,5 +100,4 @@ func TestCommandList(t *testing.T) {
 	if data, err := NewCommand(CmdList, "test", map[string]string{"size-limit": "1"}, []byte{}).Exec(); err != nil || strings.Contains(string(data), "22") {
 		t.Errorf("err: %s, data: %s", err, string(data))
 	}
-
 }

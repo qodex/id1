@@ -7,71 +7,83 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
 
 type ListOptions struct {
-	Limit     int
-	SizeLimit int
-	Keys      bool
-	Recursive bool
-	Children  bool
+	Limit          int
+	SizeLimit      int
+	TotalSizeLimit int
+	Keys           bool
+	Recursive      bool
+	Children       bool
 }
 
 func (t *ListOptions) Parse(args map[string]string) {
 	if i, err := strconv.ParseInt(args["limit"], 10, 64); err == nil {
 		t.Limit = int(i)
 	} else {
-		t.Limit = 999999
+		t.Limit = 1000
 	}
 	if i, err := strconv.ParseInt(args["size-limit"], 10, 64); err == nil {
 		t.SizeLimit = int(i)
 	} else {
-		t.SizeLimit = 999999999999
+		t.SizeLimit = 100 * MB
+	}
+	if i, err := strconv.ParseInt(args["total-size-limit"], 10, 64); err == nil {
+		t.TotalSizeLimit = int(i)
+	} else {
+		t.TotalSizeLimit = 100 * MB
 	}
 	t.Keys = args["keys"] == "true"
-
-	t.Recursive = true
-	if args["recursive"] == "false" {
-		t.Recursive = false
-	}
-
+	t.Recursive = args["recursive"] == "true"
 	t.Children = args["children"] == "true"
-	if t.Children {
-		t.Recursive = false
-	}
 }
 
 func (t *Command) list() ([]byte, error) {
 	opt := ListOptions{}
 	opt.Parse(t.Args)
+	if opt.Children && opt.Recursive {
+		return []byte{}, fmt.Errorf("recursive can't be true if children is true")
+	}
+
 	key := strings.TrimSuffix(t.Key, "*")
 	dirPath := filepath.Join(dbpath, key)
 
 	if stat, err := os.Stat(dirPath); err != nil || !stat.IsDir() {
-		return []byte{}, fmt.Errorf("not found")
+		return []byte{}, ErrNotFound
 	}
 
 	var results map[string][]byte
+	var err error = nil
 
 	if opt.Recursive {
-		results = walkDir(dirPath, opt)
+		results, err = walkDir(dirPath, opt)
 	} else {
-		results = listDir(dirPath, opt)
+		results, err = listDir(dirPath, opt)
 	}
 
 	list := []string{}
 	for k, v := range results {
-		line := fmt.Sprintf("%s=%s", k, base64.StdEncoding.EncodeToString(v))
+		var line string
+		if opt.Children || opt.Keys {
+			line = k
+		} else {
+			line = fmt.Sprintf("%s=%s", k, base64.StdEncoding.EncodeToString(v))
+		}
 		list = append(list, line)
-
 	}
-	return []byte(strings.Join(list, "\n")), nil
+	if opt.Children || opt.Keys {
+		sort.Strings(list)
+	}
+	return []byte(strings.Join(list, "\n")), err
 }
 
-func listDir(path string, opt ListOptions) map[string][]byte {
+func listDir(path string, opt ListOptions) (map[string][]byte, error) {
 	results := map[string][]byte{}
+	totalSize := 0
 	if entries, err := os.ReadDir(path); err != nil {
 		log.Printf("error listing dir %s: %s", path, err)
 	} else {
@@ -81,17 +93,23 @@ func listDir(path string, opt ListOptions) map[string][]byte {
 			}
 			itemPath := filepath.Join(path, e.Name())
 			if stat, err := os.Stat(itemPath); err != nil {
-				log.Printf("cmd: list error, %s", err)
-			} else if stat.Size() > int64(opt.SizeLimit) {
+				log.Printf("cmd list error, %s", err)
+			} else if !stat.IsDir() && stat.Size() > int64(opt.SizeLimit) {
+				continue
+			} else if opt.Children {
+				results[e.Name()] = []byte{}
+				continue
+			} else if stat.IsDir() {
 				continue
 			}
 
-			var key string
-			if opt.Children {
-				key = e.Name()
+			key := strings.TrimPrefix(itemPath, dbpath)
+			key = strings.TrimPrefix(key, "/")
+
+			if totalSize+len(key) > opt.TotalSizeLimit {
+				return results, ErrLimitExceeded
 			} else {
-				key = strings.TrimPrefix(itemPath, dbpath)
-				key = strings.TrimPrefix(key, "/")
+				totalSize += len(key)
 			}
 
 			if opt.Keys {
@@ -100,45 +118,51 @@ func listDir(path string, opt ListOptions) map[string][]byte {
 			}
 
 			if data, err := os.ReadFile(itemPath); err != nil {
-				log.Printf("cmd: list error, %s", err)
+				log.Printf("cmd list error, %s", err)
+			} else if totalSize+len(data) > opt.TotalSizeLimit {
+				return results, ErrLimitExceeded
 			} else {
 				results[key] = data
+				totalSize += len(data)
 			}
 		}
 	}
-	return results
+	return results, nil
 }
 
-func walkDir(path string, opt ListOptions) map[string][]byte {
+func walkDir(path string, opt ListOptions) (map[string][]byte, error) {
 	results := map[string][]byte{}
-	filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+	totalSize := 0
+	err := filepath.WalkDir(path, func(itemPath string, d fs.DirEntry, err error) error {
 		if len(results) >= opt.Limit {
 			return nil
 		}
-
-		if d.IsDir() || strings.HasPrefix(d.Name(), ".") {
+		if stat, err := os.Stat(itemPath); err != nil {
+			log.Printf("cmd list error, %s", err)
+		} else if !stat.IsDir() && stat.Size() > int64(opt.SizeLimit) {
+			return nil
+		} else if opt.Children {
+			results[stat.Name()] = []byte{}
+			return nil
+		} else if stat.IsDir() {
 			return nil
 		}
 
-		if stat, err := os.Stat(path); err != nil {
-			log.Printf("cmd: list error, %s", err)
-			return nil
-		} else if stat.Size() > int64(opt.SizeLimit) {
-			return nil
-		}
-
-		key := strings.TrimPrefix(path, dbpath)
+		key := strings.TrimPrefix(itemPath, dbpath)
 		key = strings.TrimPrefix(key, "/")
+		totalSize += len(key)
 
 		if opt.Keys {
 			results[key] = []byte{}
-		} else if data, err := os.ReadFile(path); err != nil {
-			log.Printf("cmd: list error, %s", err)
+		} else if data, err := os.ReadFile(itemPath); err != nil {
+			log.Printf("cmd list error: %s", err)
+		} else if totalSize+len(data) > opt.TotalSizeLimit {
+			return ErrLimitExceeded
 		} else {
 			results[key] = data
+			totalSize += len(data)
 		}
 		return nil
 	})
-
-	return results
+	return results, err
 }

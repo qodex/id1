@@ -85,6 +85,8 @@ func (t Command) Exec() ([]byte, error) {
 	switch t.Op {
 	case CmdSet:
 		return []byte{}, t.set()
+	case CmdAdd:
+		return []byte{}, t.add()
 	case CmdGet:
 		return t.get()
 	case CmdDel:

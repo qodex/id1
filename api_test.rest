@@ -1,0 +1,31 @@
+@url = http://localhost:8080
+@id = testid
+
+### set
+POST {{url}}/{{id}}/pub/name
+
+Test
+
+### get
+{{url}}/{{id}}/pub/name
+
+### add
+PATCH {{url}}/{{id}}/pub/name
+
+...text
+
+### mov
+PATCH {{url}}/{{id}}/pub/name
+X-Move-To: testid/pub/temp/name
+
+### del
+DELETE {{url}}/{{id}}/pub/temp
+
+### list all
+{{url}}/{{id}}/*?recursive=true&size-limit=1000&total-size-limit=10000
+
+### list keys 
+{{url}}/{{id}}/*?recursive=true&keys=true&limit=5
+
+### list children
+{{url}}/{{id}}/*?children=true
