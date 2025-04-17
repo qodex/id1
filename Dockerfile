@@ -1,15 +1,16 @@
-FROM ubuntu:latest
+FROM golang:latest AS build
 
-RUN apt-get update && apt-get install -y tzdata
-ENV TZ="Australia/Sydney"
+WORKDIR /go/src/app
+COPY *.go .
+COPY go.* .
 
-RUN apt-get install ca-certificates -y
+RUN go mod download
+RUN go vet -v
+RUN go test -v
 
-RUN mkdir /app
-COPY ./build/api /app
+RUN CGO_ENABLED=0 go build -ldflags="-X main.version=$(date +%Y%m%d)" -o /go/bin/app
 
-RUN mkdir /api
-COPY ./build/api /api
-EXPOSE 8080
+FROM gcr.io/distroless/static-debian12
 
-ENTRYPOINT [ "/app/api", "-d", "/mnt/id1db"]
+COPY --from=build /go/bin/app /
+CMD ["/app"]

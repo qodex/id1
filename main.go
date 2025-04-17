@@ -3,16 +3,23 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 var version = "latest"
 var port = "8080"
-var dbpath = "id1db"
+var dbpath = "/mnt/id1db"
 
 func main() {
-	log.Printf("id1 API %s, port: %s\n\n", version, port)
+	if godotenv.Load(".env") == nil {
+		port = os.Getenv("PORT")
+		dbpath = os.Getenv("DBPATH")
+	}
+
+	fmt.Printf("id1 API build %s, port: %s, dbpath: %s\n", version, port, dbpath)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		ok200(w, fmt.Appendf(nil, "id1 api v.%s", version))
@@ -36,5 +43,7 @@ func main() {
 		}
 	})
 
-	http.ListenAndServe(":"+port, nil)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		fmt.Printf("error starting service: %s", err)
+	}
 }
