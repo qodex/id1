@@ -8,14 +8,15 @@ import (
 	"strings"
 )
 
-var opMap = map[string]CmdOp{
-	http.MethodGet:    CmdGet, // also list
-	http.MethodPost:   CmdSet,
-	http.MethodDelete: CmdDel,
-	http.MethodPatch:  CmdAdd, // also mov
+var opMap = map[string]Op{
+	http.MethodGet:    Get, // also list
+	http.MethodPost:   Set,
+	http.MethodDelete: Del,
+	http.MethodPatch:  Add, // also mov
 }
 
 type RequestProps struct {
+	Id          string
 	Token       string
 	IsWebSocket bool
 	Cmd         Command
@@ -27,9 +28,10 @@ func (t RequestProps) String() string {
 
 func NewRequestProps(r *http.Request) RequestProps {
 	req := RequestProps{
+		Id: r.PathValue("id"),
 		Cmd: Command{
 			Op:   opMap[r.Method],
-			Key:  fmt.Sprintf("%s/%s", r.PathValue("id"), r.PathValue("key")),
+			Key:  KK(r.PathValue("id"), r.PathValue("key")),
 			Args: map[string]string{},
 			Data: []byte{},
 		},
@@ -56,10 +58,10 @@ func NewRequestProps(r *http.Request) RequestProps {
 	}
 
 	if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "*") {
-		req.Cmd.Op = CmdList
+		req.Cmd.Op = List
 	}
 	if r.Method == http.MethodPatch && len(r.Header["X-Move-To"]) > 0 {
-		req.Cmd.Op = CmdMov
+		req.Cmd.Op = Mov
 		req.Cmd.Data = []byte(r.Header["X-Move-To"][0])
 	}
 

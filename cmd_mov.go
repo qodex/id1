@@ -7,10 +7,10 @@ import (
 )
 
 func (t *Command) move() error {
-	oldKey := t.Key
-	oldPath := filepath.Join(dbpath, oldKey)
-
+	oldKey := t.Key.String()
 	newKey := string(t.Data)
+
+	oldPath := filepath.Join(dbpath, oldKey)
 	newPath := filepath.Join(dbpath, newKey)
 	newDir := filepath.Dir(newPath)
 

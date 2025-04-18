@@ -6,7 +6,7 @@ import (
 )
 
 func (t *Command) add() error {
-	filePath := filepath.Join(dbpath, t.Key)
+	filePath := filepath.Join(dbpath, t.Key.String())
 	dir := filepath.Dir(filePath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if mkdirErr := os.MkdirAll(dir, 0770); mkdirErr != nil {

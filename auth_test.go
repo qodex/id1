@@ -17,26 +17,27 @@ func TestGenerateChallenge(t *testing.T) {
 
 func TestAuth(t *testing.T) {
 	dbpath = "test"
-	if _, err := NewCommand(CmdSet, "testid1/pub/key", map[string]string{}, []byte("..........")).Exec(); err != nil {
+	testid1PubKey := K("testid1/pub/key")
+	if _, err := NewCommand(Set, K("testid1/pub/key"), map[string]string{}, []byte("..........")).Exec(); err != nil {
 		t.Errorf("set err: %s", err)
 	}
 
-	if !auth("testid1", NewCommand(CmdSet, "testid1/pub/key", map[string]string{}, []byte{})) {
+	if !auth("testid1", NewCommand(Set, testid1PubKey, map[string]string{}, []byte{})) {
 		t.Errorf("owner should be able to set own pub key")
 	}
 
-	if auth("testid2", NewCommand(CmdSet, "testid1/pub/key", map[string]string{}, []byte{})) {
+	if auth("testid2", NewCommand(Set, testid1PubKey, map[string]string{}, []byte{})) {
 		t.Errorf("non-owner shouldn't be able to set other pub keys")
 	}
 
-	if !auth("", NewCommand(CmdGet, "testid1/pub/key", map[string]string{}, []byte{})) {
+	if !auth("", NewCommand(Get, testid1PubKey, map[string]string{}, []byte{})) {
 		t.Errorf("anyone should be able to get pub keys")
 	}
 }
 
 func TestParseClaims(t *testing.T) {
 	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0aWQiLCJpYXQiOjE1MTYyMzkwMjJ9.m7GbsjZeOBZhdFfaU1_ulqeaogLi5gduLXqfLhyxH5w"
-	if claims, err := parseToken(token, "test"); err != nil {
+	if claims, err := validateToken(token, "test"); err != nil {
 		t.Errorf("%s", err)
 	} else if claims.Subject != "testid" {
 		t.Errorf("expected 'testid' got %s", claims.Subject)
@@ -45,7 +46,8 @@ func TestParseClaims(t *testing.T) {
 
 func TestIdExists(t *testing.T) {
 	dbpath = "test"
-	if _, err := NewCommand(CmdSet, "testid/pub/key", map[string]string{}, []byte("..........")).Exec(); err != nil {
+	testidPubKey := K("testid1/pub/key")
+	if _, err := NewCommand(Set, testidPubKey, map[string]string{}, []byte("..........")).Exec(); err != nil {
 		t.Errorf("set err: %s", err)
 	}
 

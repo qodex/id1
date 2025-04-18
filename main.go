@@ -3,23 +3,26 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
+	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 )
 
 var version = "latest"
 var port = "8080"
 var dbpath = "/mnt/id1db"
+var pubsub PubSub
 
 func main() {
 	if godotenv.Load(".env") == nil {
 		port = os.Getenv("PORT")
 		dbpath = os.Getenv("DBPATH")
 	}
-
 	fmt.Printf("id1 API build %s, port: %s, dbpath: %s\n", version, port, dbpath)
+	pubsub = NewPubSub()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		ok200(w, fmt.Appendf(nil, "id1 api v.%s", version))
@@ -30,9 +33,37 @@ func main() {
 			ok200(w, []byte{})
 			return
 		}
-
 		req := NewRequestProps(r)
-		if data, err := req.Cmd.Exec(); err == nil {
+
+		id := ""
+		if claims, err := validateToken(req.Token, generateSecret(req.Id)); err == nil {
+			id = claims.Subject
+		}
+		authOk := auth(id, req.Cmd)
+
+		if !authOk {
+			if pubKey, err := CmdGet(KK(req.Id, "pub", "key")).Exec(); err == nil {
+				if challenge, err := generateChallenge(req.Id, string(pubKey)); err == nil {
+					err401(w, challenge)
+				} else {
+					log.Println(err)
+					err500(w, err.Error())
+				}
+			} else {
+				log.Println(err)
+				err500(w, err.Error())
+			}
+			return
+		}
+
+		if req.IsWebSocket {
+			upgrader := websocket.Upgrader{}
+			upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+			wsHandler := webSocketHandler{
+				upgrader: upgrader,
+			}
+			wsHandler.Handle(w, r)
+		} else if data, err := req.Cmd.Exec(); err == nil {
 			ok200(w, data)
 		} else if errors.Is(err, ErrNotFound) {
 			err404(w, "")

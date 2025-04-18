@@ -1,38 +1,38 @@
 package main
 
-type CmdOp int
+type Op int
 
 const (
-	CmdSet CmdOp = iota
-	CmdAdd
-	CmdGet
-	CmdDel
-	CmdMov
-	CmdList
+	Set Op = iota
+	Add
+	Get
+	Del
+	Mov
+	List
 )
 
-var opName = map[CmdOp]string{
-	CmdSet:  "set",
-	CmdAdd:  "add",
-	CmdGet:  "get",
-	CmdDel:  "del",
-	CmdMov:  "mov",
-	CmdList: "list",
+var opName = map[Op]string{
+	Set:  "set",
+	Add:  "add",
+	Get:  "get",
+	Del:  "del",
+	Mov:  "mov",
+	List: "list",
 }
 
-var nameOp = map[string]CmdOp{
-	"set":  CmdSet,
-	"add":  CmdAdd,
-	"get":  CmdGet,
-	"del":  CmdDel,
-	"mov":  CmdMov,
-	"list": CmdList,
+var nameOp = map[string]Op{
+	"set":  Set,
+	"add":  Add,
+	"get":  Get,
+	"del":  Del,
+	"mov":  Mov,
+	"list": List,
 }
 
-func (t CmdOp) String() string {
+func (t Op) String() string {
 	return opName[t]
 }
 
-func NewCmdOp(s string) CmdOp {
+func op(s string) Op {
 	return nameOp[s]
 }

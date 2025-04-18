@@ -21,6 +21,17 @@ type ListOptions struct {
 	Children       bool
 }
 
+func (t ListOptions) Map() map[string]string {
+	args := map[string]string{}
+	args["limit"] = fmt.Sprintf("%d", t.Limit)
+	args["size-limit"] = fmt.Sprintf("%d", t.SizeLimit)
+	args["total-size-limit"] = fmt.Sprintf("%d", t.TotalSizeLimit)
+	args["keys"] = fmt.Sprintf("%t", t.Keys)
+	args["recursive"] = fmt.Sprintf("%t", t.Recursive)
+	args["children"] = fmt.Sprintf("%t", t.Children)
+	return args
+}
+
 func (t *ListOptions) Parse(args map[string]string) {
 	if i, err := strconv.ParseInt(args["limit"], 10, 64); err == nil {
 		t.Limit = int(i)
@@ -49,7 +60,7 @@ func (t *Command) list() ([]byte, error) {
 		return []byte{}, fmt.Errorf("recursive can't be true if children is true")
 	}
 
-	key := strings.TrimSuffix(t.Key, "*")
+	key := strings.TrimSuffix(t.Key.String(), "*")
 	dirPath := filepath.Join(dbpath, key)
 
 	if stat, err := os.Stat(dirPath); err != nil || !stat.IsDir() {

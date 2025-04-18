@@ -6,18 +6,18 @@ import (
 )
 
 func auth(id string, cmd Command) bool {
-	k := K(cmd.Key)
-	isOwner := k.Id == id
-	isPublicGet := k.Pub && (cmd.Op == CmdGet || cmd.Op == CmdList)
+	isOwner := cmd.Key.Id == id
+	isPublicGet := cmd.Key.Pub && (cmd.Op == Get || cmd.Op == List)
 	authorized := isOwner || isPublicGet
-	newIdClaim := !authorized && cmd.Op == CmdSet && k.Pub && k.Last == "key"
-	authorized = authorized || (newIdClaim && !idExists(k.Id))
+	isNewIdClaim := !authorized && (cmd.Op == Set && cmd.Key.Pub && cmd.Key.Last == "key")
+	exists := idExists(cmd.Key.Id)
+	authorized = authorized || (isNewIdClaim && !exists)
 	return authorized
 }
 
 func idExists(id string) bool {
-	getPubKeyCmd := NewCommand(CmdGet, fmt.Sprintf("%s/pub/key", id), map[string]string{}, []byte{})
-	data, err := getPubKeyCmd.Exec()
+	pubKey := KK(id, "pub", "key")
+	data, err := CmdGet(pubKey).Exec()
 	return err == nil && len(data) > 0
 }
 
@@ -26,7 +26,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func parseToken(token, secret string) (Claims, error) {
+func validateToken(token, secret string) (Claims, error) {
 	claims := Claims{}
 	if jwtToken, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

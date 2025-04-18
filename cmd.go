@@ -8,13 +8,13 @@ import (
 )
 
 type Command struct {
-	Op   CmdOp
-	Key  string
+	Op   Op
+	Key  Id1Key
 	Args map[string]string
 	Data []byte
 }
 
-func NewCommand(op CmdOp, key string, args map[string]string, data []byte) Command {
+func NewCommand(op Op, key Id1Key, args map[string]string, data []byte) Command {
 	cmd := Command{
 		Op:   op,
 		Key:  key,
@@ -24,6 +24,26 @@ func NewCommand(op CmdOp, key string, args map[string]string, data []byte) Comma
 	return cmd
 }
 
+func CmdSet(key Id1Key, data []byte) Command {
+	return NewCommand(Set, key, map[string]string{}, data)
+}
+
+func CmdGet(key Id1Key) Command {
+	return NewCommand(Get, key, map[string]string{}, []byte{})
+}
+
+func CmdList(key Id1Key, opt ListOptions) Command {
+	return NewCommand(List, key, opt.Map(), []byte{})
+}
+
+func CmdDel(key Id1Key) Command {
+	return NewCommand(Del, key, map[string]string{}, []byte{})
+}
+
+func CmdMov(src Id1Key, tgt Id1Key) Command {
+	return NewCommand(Mov, src, map[string]string{}, []byte(tgt.String()))
+}
+
 func (t Command) Bytes() []byte {
 	args := url.Values{}
 	for arg := range t.Args {
@@ -31,7 +51,7 @@ func (t Command) Bytes() []byte {
 	}
 	url := url.URL{
 		Scheme:   t.Op.String(),
-		Path:     t.Key,
+		Path:     t.Key.String(),
 		RawQuery: args.Encode(),
 	}
 	command := strings.ReplaceAll(url.String(), "//", "/")
@@ -72,8 +92,8 @@ func ParseCommand(data []byte) (Command, error) {
 	if err != nil {
 		return command, err
 	}
-	command.Op = NewCmdOp(url.Scheme)
-	command.Key = strings.TrimPrefix(url.Path, "/")
+	command.Op = op(url.Scheme)
+	command.Key = K(url.Path)
 	command.Args = map[string]string{}
 	for k := range url.Query() {
 		command.Args[k] = url.Query().Get(k)
@@ -83,17 +103,17 @@ func ParseCommand(data []byte) (Command, error) {
 
 func (t Command) Exec() ([]byte, error) {
 	switch t.Op {
-	case CmdSet:
+	case Set:
 		return []byte{}, t.set()
-	case CmdAdd:
+	case Add:
 		return []byte{}, t.add()
-	case CmdGet:
+	case Get:
 		return t.get()
-	case CmdDel:
+	case Del:
 		return []byte{}, t.del()
-	case CmdMov:
+	case Mov:
 		return []byte{}, t.move()
-	case CmdList:
+	case List:
 		return t.list()
 	default:
 		return []byte{}, fmt.Errorf("not supported")

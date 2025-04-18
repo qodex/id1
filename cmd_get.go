@@ -6,7 +6,7 @@ import (
 )
 
 func (t *Command) get() ([]byte, error) {
-	filePath := filepath.Join(dbpath, t.Key)
+	filePath := filepath.Join(dbpath, t.Key.String())
 
 	if info, err := os.Stat(filePath); os.IsNotExist(err) {
 		return []byte{}, ErrNotFound

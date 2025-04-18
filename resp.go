@@ -40,3 +40,8 @@ func err400(rw http.ResponseWriter, s string) {
 	cors(&rw)
 	http.Error(rw, s, http.StatusBadRequest)
 }
+
+func err500(rw http.ResponseWriter, s string) {
+	cors(&rw)
+	http.Error(rw, s, http.StatusInternalServerError)
+}

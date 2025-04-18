@@ -6,7 +6,7 @@ import (
 )
 
 func (t *Command) set() error {
-	keyPath := filepath.Join(dbpath, t.Key)
+	keyPath := filepath.Join(dbpath, t.Key.String())
 	dir := filepath.Dir(keyPath)
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
