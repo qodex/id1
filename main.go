@@ -43,6 +43,7 @@ func main() {
 				id = ""
 			}
 		}
+		req.Cmd.Args["x-id"] = id
 
 		authOk := auth(id, req.Cmd)
 

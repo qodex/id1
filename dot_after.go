@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -29,10 +30,12 @@ func dotAfter(dir string) {
 		}
 		dotAfterContent, _ := os.ReadFile(path)
 		dotAfterCommand, parseError := ParseCommand(dotAfterContent)
-		if parseError == nil {
+		if parseError == nil && auth(dotAfterCommand.Args["x-id"], dotAfterCommand) {
 			dotAfterCommand.Exec()
-			os.Remove(path)
+		} else {
+			log.Printf("unauthorised .after command by '%s': %s %s", dotAfterCommand.Args["x-id"], dotAfterCommand.Op, dotAfterCommand.Key)
 		}
+		os.Remove(path)
 		time.Sleep(time.Millisecond)
 		return nil
 	})

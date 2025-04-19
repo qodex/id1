@@ -111,6 +111,7 @@ func (t *Session) handleCommands() {
 	for {
 		select {
 		case cmd := <-t.CmdIn:
+			cmd.Args["x-id"] = t.Id
 			authOk := auth(t.Id, cmd)
 
 			if !authOk {

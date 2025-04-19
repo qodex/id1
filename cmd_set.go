@@ -5,10 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
 func (t *Command) set() error {
+	if !preflightChecks(t) {
+		return fmt.Errorf("failed preflight checks")
+	}
 	keyPath := filepath.Join(dbpath, t.Key.String())
 	dir := filepath.Dir(keyPath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -21,6 +25,18 @@ func (t *Command) set() error {
 	}
 	createDotTtl(*t)
 	return nil
+}
+
+func preflightChecks(cmd *Command) bool {
+	if strings.HasPrefix(cmd.Key.Name, ".after.") {
+		if dotAfterCmd, err := ParseCommand(cmd.Data); err != nil {
+			return false
+		} else {
+			dotAfterCmd.Args["x-id"] = cmd.Args["x-id"]
+			cmd.Data = dotAfterCmd.Bytes()
+		}
+	}
+	return true
 }
 
 // .filename.ttl contains .after.timestamp filename, which contains del:/filename command
