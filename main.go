@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
@@ -77,6 +78,13 @@ func main() {
 			err400(w, err.Error())
 		}
 	})
+
+	go func() {
+		for {
+			go dotAfter(dbpath)
+			time.Sleep(time.Second * 10)
+		}
+	}()
 
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		fmt.Printf("error starting service: %s", err)

@@ -1,23 +1,43 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"time"
 )
 
 func (t *Command) set() error {
 	keyPath := filepath.Join(dbpath, t.Key.String())
 	dir := filepath.Dir(keyPath)
-
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if mkdirErr := os.MkdirAll(dir, 0770); mkdirErr != nil {
 			return mkdirErr
 		}
 	}
-
 	if err := os.WriteFile(keyPath, t.Data, 0644); err != nil {
 		return err
 	}
-
+	createDotTtl(*t)
 	return nil
+}
+
+// .filename.ttl contains .after.timestamp filename, which contains del:/filename command
+func createDotTtl(cmd Command) {
+	ttlSec, _ := strconv.Atoi(cmd.Args["ttl"])
+	if ttlSec == 0 {
+		return
+	}
+	ttdMs := time.Now().UnixMilli() + (int64(ttlSec) * 1000) //time to die in Ms
+	ttlKey := KK(cmd.Key.Parent, fmt.Sprintf(".ttl.%s", cmd.Key.Name))
+	dotAfterKey := KK(cmd.Key.Parent, fmt.Sprintf(".after.%d", ttdMs))
+
+	if oldDotAfter, err := CmdGet(ttlKey).Exec(); err == nil {
+		CmdDel(K(string(oldDotAfter))).Exec()
+	}
+
+	dotAfterCommand := CmdDel(cmd.Key)
+	CmdSet(ttlKey, []byte(dotAfterKey.String())).Exec()
+	CmdSet(dotAfterKey, dotAfterCommand.Bytes()).Exec()
 }
