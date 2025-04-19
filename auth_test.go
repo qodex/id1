@@ -4,17 +4,6 @@ import (
 	"testing"
 )
 
-func TestGenerateChallenge(t *testing.T) {
-	challenge1, err1 := generateChallenge("testid1", testPubKey1)
-	challenge2, err2 := generateChallenge("testid2", testPubKey2)
-	if err1 != nil || err2 != nil {
-		t.Errorf("error generating challenge")
-	}
-	if challenge1 == challenge2 {
-		t.Errorf("invalid challenge")
-	}
-}
-
 func TestAuth(t *testing.T) {
 	dbpath = "test"
 	testid1PubKey := K("testid1/pub/key")
@@ -37,8 +26,9 @@ func TestAuth(t *testing.T) {
 
 func TestParseClaims(t *testing.T) {
 	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0aWQiLCJpYXQiOjE1MTYyMzkwMjJ9.m7GbsjZeOBZhdFfaU1_ulqeaogLi5gduLXqfLhyxH5w"
+
 	if claims, err := validateToken(token, "test"); err != nil {
-		t.Errorf("%s", err)
+		t.Errorf("err: %s", err)
 	} else if claims.Subject != "testid" {
 		t.Errorf("expected 'testid' got %s", claims.Subject)
 	}

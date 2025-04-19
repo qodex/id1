@@ -6,11 +6,11 @@ import (
 )
 
 type Id1Key struct {
-	Id        string
-	Pub       bool
-	Last      string
-	Timestamp int64
-	Segments  []string
+	Id       string
+	Name     string
+	Parent   string
+	Pub      bool
+	Segments []string
 }
 
 func (t Id1Key) String() string {
@@ -25,12 +25,14 @@ func K(s string) Id1Key {
 	s = strings.ReplaceAll(s, "\n", "")
 	s = strings.ReplaceAll(s, " ", "")
 	s = strings.Trim(s, "/")
-	s = strings.ToLower(s)
 
 	k.Segments = strings.Split(s, "/")
 	k.Id = k.Segments[0]
-	k.Last = k.Segments[len(k.Segments)-1]
+	k.Name = k.Segments[len(k.Segments)-1]
 
+	if len(k.Segments) > 1 {
+		k.Parent = strings.Join(k.Segments[:len(k.Segments)-1], "/")
+	}
 	if len(k.Segments) > 1 {
 		k.Pub = k.Segments[1] == "pub"
 	}

@@ -8,8 +8,8 @@ import (
 func auth(id string, cmd Command) bool {
 	isOwner := cmd.Key.Id == id
 	isPublicGet := cmd.Key.Pub && (cmd.Op == Get || cmd.Op == List)
-	authorized := isOwner || isPublicGet
-	isNewIdClaim := !authorized && (cmd.Op == Set && cmd.Key.Pub && cmd.Key.Last == "key")
+	authorized := isOwner || isPublicGet || authDotOp(id, cmd)
+	isNewIdClaim := !authorized && (cmd.Op == Set && cmd.Key.Pub && cmd.Key.Name == "key")
 	exists := idExists(cmd.Key.Id)
 	authorized = authorized || (isNewIdClaim && !exists)
 	return authorized

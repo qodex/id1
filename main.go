@@ -36,9 +36,13 @@ func main() {
 		req := NewRequestProps(r)
 
 		id := ""
-		if claims, err := validateToken(req.Token, generateSecret(req.Id)); err == nil {
+		if claims, _ := validateToken(req.Token, ""); len(claims.Subject) > 0 {
 			id = claims.Subject
+			if _, err := validateToken(req.Token, generateSecret(id)); err != nil {
+				id = ""
+			}
 		}
+
 		authOk := auth(id, req.Cmd)
 
 		if !authOk {
@@ -51,7 +55,7 @@ func main() {
 				}
 			} else {
 				log.Println(err)
-				err500(w, err.Error())
+				err404(w, err.Error())
 			}
 			return
 		}
