@@ -107,13 +107,13 @@ Adding option "ttl" to a set command will create a .after.(ttl seconds from now)
     
 #### Curl
 
-    curl -X POST https://id1.au/max/msg/monty/1745000011111?ttl=86400 -d "Hello"  -H "Authorization: Bearer <token>"
+    curl -X POST https://api.id1.au/max/msg/monty/1745000011111?ttl=86400 -d "Hello"  -H "Authorization: Bearer <token>"
     
     curl https://api.id1.au/max/msg/\*\?size-limit=1024\&limit=10  -H "Authorization: Bearer <token>"
     
-    curl -X PATCH https://id1.au/max/msg/monty/1745000011111 -H "X-Move-To: max/arc/monty/1745000011111" -H "Authorization: Bearer <token>"
+    curl -X PATCH https://api.id1.au/max/msg/monty/1745000011111 -H "X-Move-To: max/arc/monty/1745000011111" -H "Authorization: Bearer <token>"
     
-    curl -X DELETE https://id1.au/max/msg/monty/1745000011111 -H "Authorization: Bearer <token>"
+    curl -X DELETE https://api.id1.au/max/msg/monty/1745000011111 -H "Authorization: Bearer <token>"
 
 
 #### Recursively list up to 100 key/value pairs with value size under 1kb
