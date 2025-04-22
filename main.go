@@ -48,15 +48,16 @@ func main() {
 		authOk := auth(id, req.Cmd)
 
 		if !authOk {
-			if pubKey, err := CmdGet(KK(req.Id, "pub", "key")).Exec(); err == nil {
+			if len(id) > 0 {
+				err403(w, "")
+			} else if pubKey, err := CmdGet(KK(req.Id, "pub", "key")).Exec(); err == nil {
 				if challenge, err := generateChallenge(req.Id, string(pubKey)); err == nil {
 					err401(w, challenge)
 				} else {
-					log.Println(err)
+					log.Printf("%s: %s", err, id)
 					err500(w, err.Error())
 				}
 			} else {
-				log.Println(err)
 				err404(w, err.Error())
 			}
 			return

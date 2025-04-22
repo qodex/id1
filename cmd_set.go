@@ -22,9 +22,11 @@ func (t *Command) set() error {
 	}
 	if err := os.WriteFile(keyPath, t.Data, 0644); err != nil {
 		return err
+	} else {
+		pubsub.Publish(*t)
+		createDotTtl(*t)
+		return nil
 	}
-	createDotTtl(*t)
-	return nil
 }
 
 func preflightChecks(cmd *Command) bool {

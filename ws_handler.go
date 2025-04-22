@@ -56,13 +56,16 @@ func (t *Session) OnConnect() {
 	if _, err := CmdSet(KK(t.Id, "online"), []byte{}).Exec(); err != nil {
 		log.Printf("cmd set error: %s", err)
 	}
+	t.CmdOut <- CmdGet(KK(t.Id, "ping"))
+	t.CmdOut = pubsub.Subscribe(t.Id)
 }
 
 func (t *Session) Disconnect() {
 	t.Conn.Close()
 	pubsub.Unsubscribe(t.Id, t.CmdOut)
-	if _, err := CmdDel(KK(t.Id, "online")).Exec(); err != nil {
-		log.Printf("cmd del error: %s", err)
+	key := KK(t.Id, "online")
+	if _, err := CmdDel(key).Exec(); err != nil {
+		log.Printf("cmd del error %s: %s", err, key)
 	}
 	log.Printf("disconnected: %s", t.Id)
 }
@@ -70,7 +73,7 @@ func (t *Session) Disconnect() {
 func (t *Session) ping() {
 	for {
 		select {
-		case <-time.After(time.Second * 60):
+		case <-time.After(time.Second * 120):
 			t.CmdOut <- CmdGet(KK(t.Id, ".ping"))
 		case <-t.Ctx.Done():
 			return
@@ -96,9 +99,16 @@ func (t *Session) writeCommands() {
 	for {
 		select {
 		case cmd := <-t.CmdOut:
+			if cmd.Args["x-id"] == t.Id {
+				// don't notify sender
+				continue
+			}
 			if err := t.Conn.WriteMessage(websocket.BinaryMessage, cmd.Bytes()); err != nil {
+				log.Println("write err", err)
 				t.Cancel()
 				return
+			} else {
+				log.Printf("ws sent: %s", cmd)
 			}
 		case <-t.Ctx.Done():
 			return

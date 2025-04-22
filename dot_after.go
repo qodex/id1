@@ -24,7 +24,7 @@ func dotAfter(dir string) {
 			return nil
 		}
 		timestampMS, _ := strconv.Atoi(strings.Split(info.Name(), ".")[2])
-		timestampIsPast := timestampMS > 0 && time.Now().UnixMilli() > int64(timestampMS)
+		timestampIsPast := time.Now().UnixMilli() > int64(timestampMS)
 		if !timestampIsPast {
 			return nil
 		}
