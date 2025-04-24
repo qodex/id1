@@ -1,4 +1,4 @@
-package main
+package id1
 
 import (
 	"bytes"
@@ -27,11 +27,12 @@ func (t RequestProps) String() string {
 }
 
 func NewRequestProps(r *http.Request) RequestProps {
+	key := K(r.URL.Path)
 	req := RequestProps{
-		Id: r.PathValue("id"),
+		Id: key.Id,
 		Cmd: Command{
 			Op:   opMap[r.Method],
-			Key:  KK(r.PathValue("id"), r.PathValue("key")),
+			Key:  key,
 			Args: map[string]string{},
 			Data: []byte{},
 		},

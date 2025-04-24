@@ -1,4 +1,4 @@
-package main
+package id1
 
 type Op int
 

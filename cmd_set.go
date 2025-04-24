@@ -1,4 +1,4 @@
-package main
+package id1
 
 import (
 	"fmt"
@@ -56,6 +56,7 @@ func createDotTtl(cmd Command) {
 	}
 
 	dotAfterCommand := CmdDel(cmd.Key)
+	dotAfterCommand.Args["x-id"] = cmd.Key.Id
 	CmdSet(ttlKey, []byte(dotAfterKey.String())).Exec()
 	CmdSet(dotAfterKey, dotAfterCommand.Bytes()).Exec()
 }

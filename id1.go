@@ -1,41 +1,40 @@
-package main
+package id1
 
 import (
+	"context"
 	"errors"
-	"fmt"
-	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/joho/godotenv"
 )
 
-var version = "latest"
-var port = "8080"
+var pubsub = NewPubSub()
 var dbpath = "/mnt/id1db"
-var pubsub PubSub
 
-func main() {
-	if godotenv.Load(".env") == nil {
-		port = os.Getenv("PORT")
-		dbpath = os.Getenv("DBPATH")
-	}
-	fmt.Printf("id1 API build %s, port: %s, dbpath: %s\n", version, port, dbpath)
-	pubsub = NewPubSub()
+func Handle(path string, ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		ok200(w, fmt.Appendf(nil, "id1 api v.%s", version))
-	})
+	dbpath = path
 
-	http.HandleFunc("/{id}/{key...}", func(w http.ResponseWriter, r *http.Request) {
+	go func() {
+		for {
+			select {
+			case <-time.After(time.Second * 10):
+				dotAfter(dbpath)
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
 		if r.Method == http.MethodOptions {
 			ok200(w, []byte{})
 			return
 		}
-		req := NewRequestProps(r)
 
+		req := NewRequestProps(r)
 		id := ""
 		if claims, _ := validateToken(req.Token, ""); len(claims.Subject) > 0 {
 			id = claims.Subject
@@ -54,7 +53,6 @@ func main() {
 				if challenge, err := generateChallenge(req.Id, string(pubKey)); err == nil {
 					err401(w, challenge)
 				} else {
-					log.Printf("%s: %s", err, id)
 					err500(w, err.Error())
 				}
 			} else {
@@ -79,16 +77,5 @@ func main() {
 		} else {
 			err400(w, err.Error())
 		}
-	})
-
-	go func() {
-		for {
-			go dotAfter(dbpath)
-			time.Sleep(time.Second * 10)
-		}
-	}()
-
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		fmt.Printf("error starting service: %s", err)
 	}
 }

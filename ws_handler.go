@@ -1,4 +1,4 @@
-package main
+package id1
 
 import (
 	"context"
@@ -15,7 +15,7 @@ type webSocketHandler struct {
 }
 
 func (t webSocketHandler) Handle(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	req := K(r.URL.Path)
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdIn := make(chan (Command))
 
@@ -23,9 +23,9 @@ func (t webSocketHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error upgrading to websocket. %s", err)
 	} else {
 		session := Session{
-			Id:     id,
+			Id:     req.Id,
 			Conn:   conn,
-			CmdOut: pubsub.Subscribe(id),
+			CmdOut: pubsub.Subscribe(req.Id),
 			CmdIn:  cmdIn,
 			Ctx:    ctx,
 			Cancel: cancel,
@@ -53,7 +53,7 @@ func (t *Session) OnConnect() {
 	go t.ping()
 
 	log.Printf("connected: %s", t.Id)
-	if _, err := CmdSet(KK(t.Id, "online"), []byte{}).Exec(); err != nil {
+	if _, err := CmdSet(KK(t.Id, ".online"), []byte{}).Exec(); err != nil {
 		log.Printf("cmd set error: %s", err)
 	}
 	t.CmdOut <- CmdGet(KK(t.Id, "ping"))
@@ -63,7 +63,7 @@ func (t *Session) OnConnect() {
 func (t *Session) Disconnect() {
 	t.Conn.Close()
 	pubsub.Unsubscribe(t.Id, t.CmdOut)
-	key := KK(t.Id, "online")
+	key := KK(t.Id, ".online")
 	if _, err := CmdDel(key).Exec(); err != nil {
 		log.Printf("cmd del error %s: %s", err, key)
 	}
@@ -107,8 +107,6 @@ func (t *Session) writeCommands() {
 				log.Println("write err", err)
 				t.Cancel()
 				return
-			} else {
-				log.Printf("ws sent: %s", cmd)
 			}
 		case <-t.Ctx.Done():
 			return
@@ -146,7 +144,7 @@ func (t *Session) handleCommands() {
 				log.Printf("error executing command: %s", err)
 			}
 		case <-time.After(timeout):
-			log.Printf("no commands, disconnecting...")
+			//log.Printf("no commands, disconnecting...")
 			t.Cancel()
 			return
 		case <-t.Ctx.Done():
