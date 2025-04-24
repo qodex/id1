@@ -1,0 +1,31 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"github.com/joho/godotenv"
+	"github.com/qodex/id1"
+	"net/http"
+	"os"
+)
+
+var version = "latest"
+
+func main() {
+	port := "8080"
+	dbpath := "/mnt/id1db"
+	if godotenv.Load(".env") == nil {
+		port = os.Getenv("PORT")
+		dbpath = os.Getenv("DBPATH")
+	}
+
+	fmt.Printf("id1 API build %s, port: %s, dbpath: %s\n", version, port, dbpath)
+
+	ctx := context.Background()
+	http.HandleFunc("/{key...}", id1.Handle(dbpath, ctx))
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		fmt.Printf("error starting service: %s", err)
+	}
+
+	ctx.Done()
+}

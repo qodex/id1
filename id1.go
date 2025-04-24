@@ -3,6 +3,7 @@ package id1
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,9 +12,9 @@ import (
 
 var pubsub = NewPubSub()
 var dbpath = "/mnt/id1db"
+var version = "latest"
 
 func Handle(path string, ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
-
 	dbpath = path
 
 	go func() {
@@ -28,13 +29,18 @@ func Handle(path string, ctx context.Context) func(w http.ResponseWriter, r *htt
 	}()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		if r.Method == http.MethodOptions {
 			ok200(w, []byte{})
 			return
 		}
 
 		req := NewRequestProps(r)
+
+		if req.Id == "" {
+			ok200(w, fmt.Appendf(nil, "Qodex id1 %s https://github.com/qodex/id1", version))
+			return
+		}
+
 		id := ""
 		if claims, _ := validateToken(req.Token, ""); len(claims.Subject) > 0 {
 			id = claims.Subject

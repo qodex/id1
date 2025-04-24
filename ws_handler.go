@@ -61,12 +61,9 @@ func (t *Session) OnConnect() {
 }
 
 func (t *Session) Disconnect() {
-	t.Conn.Close()
+	CmdDel(KK(t.Id, ".online")).Exec()
 	pubsub.Unsubscribe(t.Id, t.CmdOut)
-	key := KK(t.Id, ".online")
-	if _, err := CmdDel(key).Exec(); err != nil {
-		log.Printf("cmd del error %s: %s", err, key)
-	}
+	t.Conn.Close()
 	log.Printf("disconnected: %s", t.Id)
 }
 

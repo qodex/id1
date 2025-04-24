@@ -4,15 +4,23 @@
 > 9 MB executable, 0.5 Ghz CPU, 15 MB RAM, sub 1 ms latency
 
 ## How to build
-Executable (requires go 1.23.3+)
-
-    $ go build
-    $ ./id1
 
 Docker image
 
     $ docker build -t id1:latest .
     $ docker run --rm -d -p 8080:8080 --mount type=volume,src=id1db,dst=/mnt/id1db --name id1 id1:latest
+
+Executable
+
+    func main() {
+        ctx := context.Background()
+        handle := id1.Handle(dbpath, ctx)
+        http.HandleFunc("/{key...}", func(w http.ResponseWriter, r *http.Request) {
+            handle(w, r)
+        })
+        http.ListenAndServe(":8080", nil)
+        ctx.Done()
+    }
 
 optional .env file
 
