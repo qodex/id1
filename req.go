@@ -1,8 +1,8 @@
 package id1
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -51,11 +51,10 @@ func NewRequestProps(r *http.Request) RequestProps {
 		req.IsWebSocket = true
 	}
 
-	buf := new(bytes.Buffer)
-	if _, readErr := buf.ReadFrom(r.Body); readErr != nil {
+	if data, readErr := io.ReadAll(r.Body); readErr != nil {
 		log.Printf("error reading request body, %s", readErr)
 	} else {
-		req.Cmd.Data = buf.Bytes()
+		req.Cmd.Data = data
 	}
 
 	if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "*") {

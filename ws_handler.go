@@ -3,6 +3,7 @@ package id1
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -56,7 +57,6 @@ func (t *Session) OnConnect() {
 	if _, err := CmdSet(KK(t.Id, ".online"), []byte{}).Exec(); err != nil {
 		log.Printf("cmd set error: %s", err)
 	}
-	t.CmdOut <- CmdGet(KK(t.Id, "ping"))
 	t.CmdOut = pubsub.Subscribe(t.Id)
 }
 
@@ -96,10 +96,7 @@ func (t *Session) writeCommands() {
 	for {
 		select {
 		case cmd := <-t.CmdOut:
-			if cmd.Args["x-id"] == t.Id {
-				// don't notify sender
-				continue
-			}
+			fmt.Printf("%s <- '%s'", t.Id, string(cmd.Bytes()))
 			if err := t.Conn.WriteMessage(websocket.BinaryMessage, cmd.Bytes()); err != nil {
 				log.Println("write err", err)
 				t.Cancel()
@@ -116,6 +113,10 @@ func (t *Session) handleCommands() {
 	for {
 		select {
 		case cmd := <-t.CmdIn:
+			if cmd.Op == Get && cmd.Key.String() == fmt.Sprintf("%s/.ping", t.Id) {
+				continue
+			}
+
 			cmd.Args["x-id"] = t.Id
 			authOk := auth(t.Id, cmd)
 

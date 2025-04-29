@@ -55,7 +55,7 @@ func (t Command) Bytes() []byte {
 		RawQuery: args.Encode(),
 	}
 	command := strings.ReplaceAll(url.String(), "//", "/")
-	bytes := slices.Concat([]byte(command), []byte("\n"), t.Data)
+	bytes := fmt.Appendf(nil, "%s\n%s", command, t.Data)
 	return bytes
 }
 
