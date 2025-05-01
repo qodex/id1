@@ -16,9 +16,9 @@ func NewPubSub() PubSub {
 	}
 }
 
-func (t *PubSub) Publish(cmd Command) {
+func (t *PubSub) Publish(cmd *Command) {
 	for _, ch := range t.subs[cmd.Key.Id] {
-		ch <- cmd
+		ch <- *cmd
 	}
 }
 

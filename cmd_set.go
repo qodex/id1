@@ -23,8 +23,8 @@ func (t *Command) set() error {
 	if err := os.WriteFile(keyPath, t.Data, 0644); err != nil {
 		return err
 	} else {
-		pubsub.Publish(*t)
-		createDotTtl(*t)
+		pubsub.Publish(t)
+		createDotTtl(t)
 		return nil
 	}
 }
@@ -42,7 +42,7 @@ func preflightChecks(cmd *Command) bool {
 }
 
 // .filename.ttl contains .after.timestamp filename, which contains del:/filename command
-func createDotTtl(cmd Command) {
+func createDotTtl(cmd *Command) {
 	ttlSec, _ := strconv.Atoi(cmd.Args["ttl"])
 	if ttlSec == 0 {
 		return
@@ -56,7 +56,7 @@ func createDotTtl(cmd Command) {
 	}
 
 	dotAfterCommand := CmdDel(cmd.Key)
-	dotAfterCommand.Args["x-id"] = cmd.Key.Id
-	CmdSet(ttlKey, []byte(dotAfterKey.String())).Exec()
-	CmdSet(dotAfterKey, dotAfterCommand.Bytes()).Exec()
+	dotAfterCommand.Args["x-id"] = cmd.Args["x-id"]
+	CmdSet(ttlKey, map[string]string{"x-id": cmd.Args["x-id"]}, []byte(dotAfterKey.String())).Exec()
+	CmdSet(dotAfterKey, map[string]string{"x-id": cmd.Args["x-id"]}, dotAfterCommand.Bytes()).Exec()
 }

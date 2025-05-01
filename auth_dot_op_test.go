@@ -7,18 +7,18 @@ import (
 
 func setup() {
 	dbpath = "test"
-	CmdSet(K("test0/pub/key"), []byte("...")).Exec()
-	CmdSet(K("test0/pub/tags/Robot"), []byte("...")).Exec()
-	CmdSet(K("test0/.get"), []byte("Reader")).Exec()
-	CmdSet(K("test0/pub/tags/.set"), []byte("Tagger")).Exec()
-	CmdSet(K(".roles/max"), []byte("Reader")).Exec()
-	CmdSet(K("test0/.roles/max"), []byte("Admin")).Exec()
-	CmdSet(K("test0/pub/tags/.roles/max"), []byte("Tagger")).Exec()
+	CmdSet(K("test0/pub/key"), map[string]string{}, []byte("...")).Exec()
+	CmdSet(K("test0/pub/tags/Robot"), map[string]string{}, []byte("...")).Exec()
+	CmdSet(K("test0/.get"), map[string]string{}, []byte("Reader")).Exec()
+	CmdSet(K("test0/pub/tags/.set"), map[string]string{}, []byte("Tagger")).Exec()
+	CmdSet(K(".roles/max"), map[string]string{}, []byte("Reader")).Exec()
+	CmdSet(K("test0/.roles/max"), map[string]string{}, []byte("Admin")).Exec()
+	CmdSet(K("test0/pub/tags/.roles/max"), map[string]string{}, []byte("Tagger")).Exec()
 }
 
 func TestAuthDotOp(t *testing.T) {
 	setup()
-	if !authDotOp("max", CmdSet(K("test0/pub/tags/Robot"), []byte{})) {
+	if !authDotOp("max", CmdSet(K("test0/pub/tags/Robot"), map[string]string{}, []byte{})) {
 		t.Fail()
 	}
 	if authDotOp("max", CmdDel(K("test0/pub/tags/Robot"))) {

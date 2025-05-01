@@ -24,8 +24,8 @@ func NewCommand(op Op, key Id1Key, args map[string]string, data []byte) Command 
 	return cmd
 }
 
-func CmdSet(key Id1Key, data []byte) Command {
-	return NewCommand(Set, key, map[string]string{}, data)
+func CmdSet(key Id1Key, args map[string]string, data []byte) Command {
+	return NewCommand(Set, key, args, data)
 }
 
 func CmdGet(key Id1Key) Command {
@@ -45,6 +45,11 @@ func CmdMov(src Id1Key, tgt Id1Key) Command {
 }
 
 func (t Command) Bytes() []byte {
+	bytes := fmt.Appendf(nil, "%s\n%s", t.String(), t.Data)
+	return bytes
+}
+
+func (t Command) String() string {
 	args := url.Values{}
 	for arg := range t.Args {
 		args.Set(arg, t.Args[arg])
@@ -54,13 +59,8 @@ func (t Command) Bytes() []byte {
 		Path:     t.Key.String(),
 		RawQuery: args.Encode(),
 	}
-	command := strings.ReplaceAll(url.String(), "//", "/")
-	bytes := fmt.Appendf(nil, "%s\n%s", command, t.Data)
-	return bytes
-}
-
-func (t Command) String() string {
-	return string(t.Bytes())
+	cmdStr := strings.ReplaceAll(url.String(), "//", "/")
+	return cmdStr
 }
 
 /*

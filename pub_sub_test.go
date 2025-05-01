@@ -33,8 +33,8 @@ func TestPubSub(t *testing.T) {
 		go func() {
 			for sub := range subCount {
 				key := KK(fmt.Sprintf("subscriber%d", sub), pub)
-				cmd := CmdSet(key, []byte{})
-				pubsub.Publish(cmd)
+				cmd := CmdSet(key, map[string]string{}, []byte{})
+				pubsub.Publish(&cmd)
 				time.Sleep(time.Millisecond)
 			}
 		}()

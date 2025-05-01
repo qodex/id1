@@ -1,21 +1,38 @@
 package id1
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"testing"
 )
 
+func TestCmdBytes(t *testing.T) {
+	cmd := Command{
+		Op:  Set,
+		Key: KK("testid", "dir", "one"),
+		Args: map[string]string{
+			"ttl":  "5",
+			"x-id": "admin",
+		},
+		Data: []byte("test data"),
+	}
+	if string(cmd.Bytes()) != "set:/testid/dir/one?ttl=5&x-id=admin\ntest data" {
+		t.Errorf("cmd.Bytes unexpected val")
+	}
+}
+
 func TestParseCommand(t *testing.T) {
-	str := "set:/max/msg/1731664334195180?ttl=600\ndata..."
-	cmd, err := ParseCommand([]byte("set:/max/msg/1731664334195180?ttl=600\ndata..."))
+	cmdStr := "set:/max/msg/1731664334195180?ttl=600"
+	cmdData := []byte("data...")
+	cmd, err := ParseCommand(fmt.Appendf(nil, "%s\n%s", cmdStr, cmdData))
 
 	fail := err != nil ||
 		cmd.Op != Set ||
 		cmd.Key.String() != "max/msg/1731664334195180" ||
 		cmd.Args["ttl"] != "600" ||
 		string(cmd.Data) != "data..." ||
-		cmd.String() != str
+		cmd.String() != cmdStr
 
 	if fail {
 		log.Printf("err=%s, op=%s, key=%s, args: %s, data: %s", err, cmd.Op, cmd.Key, cmd.Args, cmd.Data)

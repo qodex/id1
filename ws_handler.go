@@ -54,7 +54,7 @@ func (t *Session) OnConnect() {
 	go t.ping()
 
 	log.Printf("connected: %s", t.Id)
-	if _, err := CmdSet(KK(t.Id, ".online"), []byte{}).Exec(); err != nil {
+	if _, err := CmdSet(KK(t.Id, ".online"), map[string]string{}, []byte{}).Exec(); err != nil {
 		log.Printf("cmd set error: %s", err)
 	}
 	t.CmdOut = pubsub.Subscribe(t.Id)
@@ -96,7 +96,6 @@ func (t *Session) writeCommands() {
 	for {
 		select {
 		case cmd := <-t.CmdOut:
-			fmt.Printf("%s <- '%s'", t.Id, string(cmd.Bytes()))
 			if err := t.Conn.WriteMessage(websocket.BinaryMessage, cmd.Bytes()); err != nil {
 				log.Println("write err", err)
 				t.Cancel()
@@ -118,12 +117,13 @@ func (t *Session) handleCommands() {
 			}
 
 			cmd.Args["x-id"] = t.Id
+
 			authOk := auth(t.Id, cmd)
 
 			if !authOk {
 				if pubKey, err := CmdGet(KK(t.Id, "pub", "key")).Exec(); err == nil {
 					if challenge, err := generateChallenge(t.Id, string(pubKey)); err == nil {
-						t.CmdOut <- CmdSet(KK(t.Id, "auth"), []byte(challenge))
+						t.CmdOut <- CmdSet(KK(t.Id, "auth"), map[string]string{}, []byte(challenge))
 					} else {
 						log.Println(err)
 					}
@@ -135,7 +135,7 @@ func (t *Session) handleCommands() {
 			}
 
 			if data, err := cmd.Exec(); err == nil {
-				t.CmdOut <- CmdSet(cmd.Key, data)
+				t.CmdOut <- CmdSet(cmd.Key, map[string]string{}, data)
 			} else if errors.Is(ErrNotFound, err) {
 				t.CmdOut <- CmdDel(cmd.Key)
 			} else {
