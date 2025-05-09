@@ -5,11 +5,10 @@ import (
 )
 
 func TestPublicKeyEnc(t *testing.T) {
-	msg := ""
-	for range 117 { // max msg size
-		msg += "a"
-	}
-	if _, err := encryptWithPubKey(testPubKey1, msg); err != nil {
+	secret := generateSecret("test1")
+	if data, err := encrypt(`-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC3gMw5zAsvBuJ+swdVW8Ec9r1zu42Z+m7TsgoaV6yas58hxrPCeBUoNhFmz380yBpXjB7jwX1f5nGrZA9FWt2hmtJNLCvr6U1ZMZeERbPWjFIE02BWK0p+qZKByjpNv+LYMr8YM/JfYmqhhVbhqno15vVFyfNmaVIB6y1yJtn7xQIDAQAB
+-----END PUBLIC KEY-----`, secret); err != nil || len(data) == 0 {
 		t.Errorf("encrypt failed: %s", err)
 	}
 }
